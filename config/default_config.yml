@@ -1,0 +1,18 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 8080,
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": "",
+  },
+  "mongo":{
+    "host": "mongodb+srv",
+    "username": "madhu",
+    "password": "BlRchewaZyQH9U1n",
+    "database": "digital_marketing"
+  }
+}
