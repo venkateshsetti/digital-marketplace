@@ -3,15 +3,15 @@ package mongo
 import (
 	"context"
 	"digital-marketplace/config"
+	"log"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"log"
 )
 
 func ConnectToMongoDB(conf *config.AppConfig) (*mongo.Client, error) {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(conf.Mongo.Host+"://"+conf.Mongo.Username+":"+conf.Mongo.Password+"@cluster1.clc0pny.mongodb.net/?retryWrites=true&w=majority"))
-	log.Println("Successfully connected to MongoDB")
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(conf.Mongo.Host+"://"+conf.Mongo.Username+":"+conf.Mongo.Password+"@cluster0.kheedti.mongodb.net/?retryWrites=true&w=majority"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -20,5 +20,6 @@ func ConnectToMongoDB(conf *config.AppConfig) (*mongo.Client, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Successfully connected to MongoDB")
 	return client, nil
 }

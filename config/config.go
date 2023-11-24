@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 	"log"
+
+	"github.com/spf13/viper"
 )
 
 type ServerConfig struct {
@@ -24,10 +25,15 @@ type MongoConfig struct {
 	Database string `json:"database"`
 }
 
+type CoingeckoConfig struct {
+	Url string `json:"url"`
+}
+
 type AppConfig struct {
-	Server ServerConfig
-	Redis  RedisConfig
-	Mongo  MongoConfig
+	Server    ServerConfig
+	Redis     RedisConfig
+	Mongo     MongoConfig
+	Coingecko CoingeckoConfig
 }
 
 func LoadConfig() *AppConfig {

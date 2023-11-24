@@ -11,8 +11,11 @@
   },
   "mongo":{
     "host": "mongodb+srv",
-    "username": "madhu",
-    "password": "BlRchewaZyQH9U1n",
+    "username": "venkateshsetti123",
+    "password": "6eAeg1jRj5BueUcF",
     "database": "digital_marketing"
+  },
+  "coingecko":{
+    "url": "https://api.coingecko.com/api/v3"
   }
 }

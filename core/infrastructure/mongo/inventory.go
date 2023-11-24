@@ -3,7 +3,7 @@ package mongo
 import (
 	"context"
 	"digital-marketplace/config"
-	"digital-marketplace/core/domain"
+	core "digital-marketplace/core"
 	"log"
 	"time"
 
@@ -25,15 +25,15 @@ func InventoryService(config *config.AppConfig, client *mongo.Client) *Inventory
 	}
 }
 
-func (i *Inventory) GetInventory() ([]domain.InventoryItem, error) {
+func (i *Inventory) GetInventory() ([]core.InventoryItem, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var inventoryItems []domain.InventoryItem
+	var inventoryItems []core.InventoryItem
 	configData := i.config.Mongo
 
 	db := i.client.Database(configData.Database)
-	collection := db.Collection("inventory")
+	collection := db.Collection("items")
 
 	cursor, err := collection.Find(ctx, bson.D{})
 	log.Println("Fetching items...")
@@ -48,7 +48,7 @@ func (i *Inventory) GetInventory() ([]domain.InventoryItem, error) {
 	}()
 
 	for cursor.Next(ctx) {
-		var result domain.InventoryItem
+		var result core.InventoryItem
 		if err = cursor.Decode(&result); err != nil {
 			log.Fatal("Error decoding data: ", err)
 			return nil, err
@@ -64,17 +64,17 @@ func (i *Inventory) GetInventory() ([]domain.InventoryItem, error) {
 	return inventoryItems, nil
 }
 
-func (i *Inventory) PurchasedHistory(wallet_id string) ([]domain.PurchasedHistory, error) {
+func (i *Inventory) PurchasedHistory(walletID string) ([]core.PurchasedHistory, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var purchasedHistory []domain.PurchasedHistory
+	var purchasedHistory []core.PurchasedHistory
 	configData := i.config.Mongo
 
 	db := i.client.Database(configData.Database)
 	collection := db.Collection("purchase_history")
 
-	filter := bson.D{{"wallet_id", wallet_id}}
+	filter := bson.D{{Key: "wallet_id", Value: walletID}}
 
 	cursor, err := collection.Find(ctx, filter)
 	log.Println("Fetching history...")
@@ -89,7 +89,7 @@ func (i *Inventory) PurchasedHistory(wallet_id string) ([]domain.PurchasedHistor
 	}()
 
 	for cursor.Next(ctx) {
-		var result domain.PurchasedHistory
+		var result core.PurchasedHistory
 		if err = cursor.Decode(&result); err != nil {
 			log.Println("err", err)
 			log.Fatal("Error decoding data: ", err)
@@ -106,7 +106,7 @@ func (i *Inventory) PurchasedHistory(wallet_id string) ([]domain.PurchasedHistor
 	return purchasedHistory, nil
 }
 
-func (i *Inventory) UpdateInventoryItems(item_id string, req domain.ItemUpdateRequest) (domain.InventoryItem, error) {
+func (i *Inventory) UpdateInventoryItems(item_id string, req core.ItemUpdateRequest) (core.InventoryItem, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -119,7 +119,7 @@ func (i *Inventory) UpdateInventoryItems(item_id string, req domain.ItemUpdateRe
 
 	objId, _ := primitive.ObjectIDFromHex(item_id)
 
-	filter := bson.D{{"_id", objId}}
+	filter := bson.D{{Key: "_id", Value: objId}}
 
 	if req.Quantity == 0 {
 		update = bson.M{
@@ -135,16 +135,16 @@ func (i *Inventory) UpdateInventoryItems(item_id string, req domain.ItemUpdateRe
 		}
 	}
 
-	var resp domain.InventoryItem
+	var resp core.InventoryItem
 
 	result := collection.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(1))
 	log.Println("Updating item...")
 	if result.Err() != nil {
-		return domain.InventoryItem{}, result.Err()
+		return core.InventoryItem{}, result.Err()
 	}
 	if err := result.Decode(&resp); err != nil {
 		log.Fatal("Error decoding data:", err)
-		return domain.InventoryItem{}, err
+		return core.InventoryItem{}, err
 	}
 
 	return resp, nil
