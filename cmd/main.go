@@ -8,6 +8,7 @@ import (
 	"digital-marketplace/core/infrastructure/mongo"
 	"digital-marketplace/core/infrastructure/redis"
 	"digital-marketplace/core/utils/coingecko"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 // @title Digital Marketplace
 // @version 1.0
 // @description Digital Market place api let users to view,list and make a purchase of items listed in inventory
-// @host localhost:8080
 // @BasePath /api/v1
 
 func main() {
@@ -29,10 +29,10 @@ func main() {
 	}
 	defer client.Disconnect(context.Background())
 
-	inventory := mongo.InventoryService(conf, client)
+	mongo := mongo.MongoDBService(conf, client)
 	coingecko := coingecko.CoingeckoService(conf)
 
-	redisRepo, err := redis.NewRedisRepository()
+	redisRepo, err := redis.NewRedisRepository(conf)
 	if err != nil {
 		log.Fatalf("Error connecting to Redis %v", err.Error())
 	}
@@ -41,12 +41,19 @@ func main() {
 		log.Println("Error:-", err)
 		return
 	}
+	// Convert struct to JSON
+	jsonData, err := json.Marshal(*res)
+	if err != nil {
+		log.Fatal(err)
+	}
+	redisRepo.Client.Set(context.TODO(), "list", jsonData, 0)
 	for _, data := range *res {
 		redisRepo.Client.Set(context.TODO(), data.ID, data.Symbol, 0)
 	}
-	domainRepo := domain.NewDomain(conf, inventory, coingecko)
+	log.Printf("Updated the Cache with %d keys",len(*res))
+	domainRepo := domain.NewDomain(conf, mongo, coingecko, redisRepo)
 
-	router := api.NewRoutes(conf, inventory, coingecko, domainRepo)
+	router := api.NewRoutes(conf, mongo, coingecko, domainRepo,redisRepo)
 
 	port := conf.Server.Port
 	serverAddress := fmt.Sprintf(":%d", port)

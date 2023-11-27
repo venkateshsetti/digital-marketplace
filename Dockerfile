@@ -14,7 +14,13 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
+WORKDIR  /app/cmd/
 RUN go build -o main .
+
+COPY config/default_config.yml /app/cmd/config/
+
+RUN apk add --no-cache docker-compose
+
 
 # Expose port 8080 to the outside world
 EXPOSE 8080

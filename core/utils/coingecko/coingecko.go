@@ -3,6 +3,7 @@ package coingecko
 import (
 	"digital-marketplace/config"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -43,17 +44,25 @@ func (c *Coingecko) GetCoinList() (*CoinsList, error) {
 
 func (c *Coingecko) GetTokenPrice(tokenID string) (float64, error) {
 	var data map[string]map[string]float64
-	tokenPriceUrl := c.config.Coingecko.Url + "simple/price?ids=" + tokenID + "&vs_currencies=inr"
+	tokenPriceUrl := c.config.Coingecko.Url + "/simple/price?ids=" + tokenID + "&vs_currencies=inr"
 	response, err := http.Get(tokenPriceUrl)
 	if err != nil {
 		log.Println("Error:", err)
 		return 0.0, err
 	}
 	defer response.Body.Close()
-	err = json.NewDecoder(response.Body).Decode(&data)
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Println("Error reading response body:", err)
+		return 0.0, err
+
+	}
+	log.Println(string(bodyBytes), tokenID)
+	err = json.Unmarshal(bodyBytes, &data)
 	if err != nil {
 		log.Println("Error decoding JSON:", err)
 		return 0.0, err
+
 	}
 	return data[tokenID]["inr"], nil
 }

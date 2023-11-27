@@ -4,7 +4,7 @@
     "port": 8080,
   },
   "redis": {
-    "host": "localhost",
+    "host": "172.31.15.135",
     "port": 6379,
     "password": "",
     "db": "",

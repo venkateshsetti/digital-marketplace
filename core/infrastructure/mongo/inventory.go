@@ -13,19 +13,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Inventory struct {
+type MongoDB struct {
 	config *config.AppConfig
 	client *mongo.Client
 }
 
-func InventoryService(config *config.AppConfig, client *mongo.Client) *Inventory {
-	return &Inventory{
+func MongoDBService(config *config.AppConfig, client *mongo.Client) *MongoDB {
+	return &MongoDB{
 		config: config,
 		client: client,
 	}
 }
 
-func (i *Inventory) GetInventory() ([]core.InventoryItem, error) {
+func (i *MongoDB) GetInventory() ([]core.InventoryItem, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -38,33 +38,33 @@ func (i *Inventory) GetInventory() ([]core.InventoryItem, error) {
 	cursor, err := collection.Find(ctx, bson.D{})
 	log.Println("Fetching items...")
 	if err != nil {
-		log.Fatal("Error fetching data: ", err)
+		log.Println("Error fetching data: ", err)
 		return nil, err
 	}
 	defer func() {
 		if err = cursor.Close(ctx); err != nil {
-			log.Fatal("Error closing cursor:", err)
+			log.Println("Error closing cursor:", err)
 		}
 	}()
 
 	for cursor.Next(ctx) {
 		var result core.InventoryItem
 		if err = cursor.Decode(&result); err != nil {
-			log.Fatal("Error decoding data: ", err)
+			log.Println("Error decoding data: ", err)
 			return nil, err
 		}
 		inventoryItems = append(inventoryItems, result)
 	}
 
 	if err = cursor.Err(); err != nil {
-		log.Fatal("Error during cursor iteration: ", err)
+		log.Println("Error during cursor iteration: ", err)
 		return nil, err
 	}
 
 	return inventoryItems, nil
 }
 
-func (i *Inventory) PurchasedHistory(walletID string) ([]core.PurchasedHistory, error) {
+func (i *MongoDB) PurchasedHistory(userID string) ([]core.PurchasedHistory, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -74,39 +74,41 @@ func (i *Inventory) PurchasedHistory(walletID string) ([]core.PurchasedHistory, 
 	db := i.client.Database(configData.Database)
 	collection := db.Collection("purchase_history")
 
-	filter := bson.D{{Key: "wallet_id", Value: walletID}}
-
+	filter := bson.M{"user_id":userID}
+    
 	cursor, err := collection.Find(ctx, filter)
-	log.Println("Fetching history...")
+	log.Println("Fetching history...",cursor.Current,filter)
 	if err != nil {
-		log.Fatal("Error fetching data: ", err)
+		log.Println("Error fetching data: ", err)
 		return nil, err
 	}
 	defer func() {
 		if err = cursor.Close(ctx); err != nil {
-			log.Fatal("Error closing cursor:", err)
+			log.Println("Error closing cursor:", err)
+			return
 		}
 	}()
 
 	for cursor.Next(ctx) {
+		log.Println("started...")
 		var result core.PurchasedHistory
 		if err = cursor.Decode(&result); err != nil {
-			log.Println("err", err)
-			log.Fatal("Error decoding data: ", err)
+			log.Println("Error decoding data: ", err)
 			return nil, err
 		}
+		log.Println(result,"hhhh")
 		purchasedHistory = append(purchasedHistory, result)
 	}
 
 	if err = cursor.Err(); err != nil {
-		log.Fatal("Error during cursor iteration: ", err)
+		log.Println("Error during cursor iteration: ", err)
 		return nil, err
 	}
 
 	return purchasedHistory, nil
 }
 
-func (i *Inventory) UpdateInventoryItems(item_id string, req core.ItemUpdateRequest) (core.InventoryItem, error) {
+func (i *MongoDB) UpdateInventoryItems(item_id string, req core.ItemUpdateRequest) (core.InventoryItem, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -115,7 +117,7 @@ func (i *Inventory) UpdateInventoryItems(item_id string, req core.ItemUpdateRequ
 	var update primitive.M
 
 	db := i.client.Database(configData.Database)
-	collection := db.Collection("inventory")
+	collection := db.Collection("items")
 
 	objId, _ := primitive.ObjectIDFromHex(item_id)
 

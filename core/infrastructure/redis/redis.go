@@ -2,20 +2,21 @@ package redis
 
 import (
 	"context"
-	"digital-marketplace/core/utils/coingecko"
+	"digital-marketplace/config"
+	"fmt"
 	"log"
 
 	"github.com/go-redis/redis/v8"
 )
 
 type RedisRepository struct {
-	client    *redis.Client
-	coingecko *coingecko.Coingecko
+	Client *redis.Client
+	config    *config.AppConfig
 }
 
-func NewRedisRepository(coingecko *coingecko.Coingecko) (*RedisRepository, error) {
+func NewRedisRepository(config    *config.AppConfig	) (*RedisRepository, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     config.Redis.Host + ":" + fmt.Sprint(config.Redis.Port),
 		Password: "",
 		DB:       0,
 	})
@@ -23,26 +24,14 @@ func NewRedisRepository(coingecko *coingecko.Coingecko) (*RedisRepository, error
 	if err := client.Ping(ctx).Err(); err != nil {
 		log.Fatalf("Failed to connect to redis: %v", err)
 	}
+	log.Println("Successfully connected to redis")
 	return &RedisRepository{
-		client:    client,
-		coingecko: coingecko,
+		Client: client,
 	}, nil
 }
 
-func (r *RedisRepository) SetData() {
-	res, err := r.coingecko.GetCoinList()
-	if err != nil {
-		log.Println("Error:-", err)
-		return
-	}
-	for _, data := range *res {
-		r.client.Set(context.TODO(), data.ID, data.Symbol, 0)
-	}
-	return
-}
-
 func (r *RedisRepository) GetTokenData(key string) (string, error) {
-	res := r.client.Get(context.TODO(), key)
+	res := r.Client.Get(context.TODO(), key)
 	return res.Result()
 
 }
